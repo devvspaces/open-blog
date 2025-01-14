@@ -55,7 +55,24 @@ cd src/frontend
 npm start
 ```
 
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
+Which will start a server at `http://localhost:3000`, proxying API requests to the replica at port 4943.
+
+### Usage
+
+1. Visit the frontend URL and then sign up using the sign up button
+2. You can read posts if you are not logged in, so you don't need to login or signup to read posts
+3. Head to the profile section to create a new post
+4. You can create a post using the create post button
+5. Then when writing your blog post you can use Markdown format and see the preview of your blog directly on the right of the editor
+6. When you are done you can set the status of the blog to one of the following (Published, Draft, or Archive). Published posts are posts that can be read by anyone.
+
+### Future Features
+
+1. Allow users to edit blog posts
+2. Allow readers to donate to writers
+3. Allow writers to add tags to blogs
+4. Allow writers to create blog series.
+5. Upgrade to the the `transfer_from` and `approve` methods for charging members and readers.
 
 ### Note on frontend environment variables
 

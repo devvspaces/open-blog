@@ -36,32 +36,39 @@ shared ({ caller = installer_ }) actor class Blog() = this {
   stable var stablePosts : [(Principal, Vector<Post>)] = [];
   let posts = HashMap.fromIter<Principal, Vector<Post>>(stablePosts.vals(), 0, Principal.equal, Principal.hash);
 
+  // Serialize stable variables before upgrades
   system func preupgrade() {
     stableMembers := Iter.toArray(members.entries());
     stablePosts := Iter.toArray(posts.entries());
   };
 
+  // Ensure the stable variables are updated when upgrades are done
   system func postupgrade() {
     stableMembers := [];
     stablePosts := [];
   };
 
+  // Get this canister ID
   func getCanisterId_() : Principal {
     Principal.fromActor(this);
   };
 
+  // Get the canister name
   public query func getName() : async Text {
     return name;
   };
 
+  // Get the canister manifesto
   public query func getManifesto() : async Text {
     return manifesto;
   };
 
+  // Find other members on the protocol
   public query func getMembers() : async [(Principal, Member)] {
     Iter.toArray(members.entries());
   };
 
+  // Read published posts on the platform
   public query func getPosts() : async [PostWithAuthor] {
     let vec = Vector.new<PostWithAuthor>();
     for ((principal, userPosts) in posts.entries()) {
@@ -69,13 +76,15 @@ shared ({ caller = installer_ }) actor class Blog() = this {
         case (null) {};
         case (?member) {
           for (post in Vector.vals(userPosts)) {
-            Vector.add<PostWithAuthor>(
-              vec,
-              {
-                post = post;
-                author = member;
-              },
-            );
+            if (post.status == #Published) {
+              Vector.add<PostWithAuthor>(
+                vec,
+                {
+                  post = post;
+                  author = member;
+                },
+              );
+            };
           };
         };
       };
@@ -83,6 +92,7 @@ shared ({ caller = installer_ }) actor class Blog() = this {
     Vector.toArray(vec);
   };
 
+  // Get a member profile
   public query func getMemberProfile(p : Principal) : async Result<Member, Text> {
     switch (members.get(p)) {
       case null {
@@ -94,6 +104,7 @@ shared ({ caller = installer_ }) actor class Blog() = this {
     };
   };
 
+  // Get a member posts
   public query func getMemberPosts(p : Principal) : async Result<[Post], Text> {
     switch (posts.get(p)) {
       case null {
@@ -105,6 +116,7 @@ shared ({ caller = installer_ }) actor class Blog() = this {
     };
   };
 
+  // Register a new member account
   public shared ({ caller }) func register(name : Text, github : Text, bio : Text) : async Result<(), Text> {
     switch (members.get(caller)) {
       case (null) {
@@ -123,6 +135,7 @@ shared ({ caller = installer_ }) actor class Blog() = this {
     };
   };
 
+  // Create a new post
   public shared ({ caller }) func createPost(title : Text, content : Text, status : PostStatus) : async Result<(), Text> {
     switch (members.get(caller)) {
       case (null) {
@@ -187,6 +200,7 @@ shared ({ caller = installer_ }) actor class Blog() = this {
     };
   };
 
+  // Get post details
   public query func getPost(id : Nat, owner : Principal) : async Result<Post, Text> {
     switch (posts.get(owner)) {
       case null {
@@ -201,6 +215,7 @@ shared ({ caller = installer_ }) actor class Blog() = this {
     };
   };
 
+  // Update post status
   public shared ({ caller }) func updatePostStatus(id : Nat, status : PostStatus) : async Result<(), Text> {
     switch (members.get(caller)) {
       case (null) {
@@ -233,10 +248,12 @@ shared ({ caller = installer_ }) actor class Blog() = this {
     };
   };
 
+  // Get available plans
   public query func getPlans() : async [Plan] {
     [#Free, #Elite, #Legendary];
   };
 
+  // Private function to get the cost of a plan
   private func _getPlanCost(plan : Plan) : Nat {
     switch (plan) {
       case (#Free) {
@@ -251,6 +268,7 @@ shared ({ caller = installer_ }) actor class Blog() = this {
     };
   };
 
+  // Function to update a plan of a member
   func _updatePlan(caller : Principal, plan : Plan) : async () {
     switch (members.get(caller)) {
       case (null) {
@@ -269,10 +287,12 @@ shared ({ caller = installer_ }) actor class Blog() = this {
     };
   };
 
+  // Get the ICRC1 Token canister ID
   public query func get_icrc1_token_canister_id() : async Text {
     icrc1TokenCanisterId_;
   };
 
+  // Get a new ICRC1 Token canister ID
   public shared ({ caller }) func set_icrc1_token_canister(tokenCanisterId : Text) : async Result<(), Text> {
     if (Principal.isAnonymous(caller) or caller != installer_) return #err("Not authorized");
 
@@ -292,10 +312,12 @@ shared ({ caller = installer_ }) actor class Blog() = this {
     };
   };
 
+  // Get a member subaccount address for sending tokens to the canister
   public shared query ({ caller }) func get_account_address() : async Text {
     AccountConverter.toText(Utils.getAccountUserSubaccount({ canisterId = getCanisterId_(); user = caller }));
   };
 
+  // Transfer tokens for user subaccount to the canister main account
   public shared ({ caller }) func transferFromSubAccountToMain(
     plan : Plan
   ) : async Result<(Text, PaymentStatus), (Text, PaymentStatus)> {
