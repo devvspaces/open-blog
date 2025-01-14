@@ -19,6 +19,14 @@ This project uses the following technologies:
 
 If you want to test your project locally, you can use the following commands:
 
+Install Backend dependencies
+
+```bash
+mops install
+```
+
+If you don't already have `ic-mops`, check the [documentation]() out to install it.
+
 Deploy the backend canister and generate it's declarations
 
 ```bash
